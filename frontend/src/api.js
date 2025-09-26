@@ -1,5 +1,5 @@
 // In your API configuration
-const BASE = import.meta.env.VITE_API_URL;
+const BASE = "https://event-booking-management.onrender.com";
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
