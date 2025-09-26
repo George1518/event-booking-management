@@ -18,6 +18,7 @@ app.use(cors({
 }));
  connectDB();
  app.use(express.json());
+ app.set("trust proxy", 1);
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -29,7 +30,8 @@ app.use(session({
     cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
         httpOnly: true,
-        secure: false
+       secure: process.env.NODE_ENV === "production",
+         sameSite: "lax"
     }
 }));
 
