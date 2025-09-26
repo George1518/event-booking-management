@@ -11,7 +11,7 @@ export default function MyBookings() {
 
   const loadBookings = async () => {
     try {
-      const response = await api.myBookings('/bookings/my-bookings');
+      const response = await api.myBookings(); // Fixed: removed the parameter
       setBookings(response.data.bookings || []);
     } catch (err) {
       console.error("Failed to load bookings:", err);
@@ -27,7 +27,7 @@ export default function MyBookings() {
     }
 
     try {
-      await api.put(`/bookings/${id}/cancel`);
+      await api.cancelBooking(id); // Fixed: use cancelBooking method instead of put
       // Update local state
       setBookings(prev => prev.map(booking => 
         booking._id === id ? { ...booking, status: 'cancelled' } : booking
