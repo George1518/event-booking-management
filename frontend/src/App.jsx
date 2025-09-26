@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
-import Events from "./pages/Events";
+import Events from "./pages/Events.jsx";
 import EventDetails from "./pages/EventDetails";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
@@ -114,8 +114,7 @@ function NavBar({ user, logout }) {
         <div style={{ 
           display: "flex", 
           gap: "8px",
-          alignItems: "center",
-          gap: "2rem"
+          alignItems: "center"
         }}
         className="desktop-nav"
         >
