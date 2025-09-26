@@ -12,24 +12,39 @@ import MongoStore from "connect-mongo";
 const PORT = process.env.PORT || 5000;
 const app = express();
 
-// CORS configuration
+// CORS configuration - ADD YOUR GITHUB PAGES URL
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://george1518.github.io", // Add this line
   process.env.FRONTEND_URL
 ].filter(Boolean);
+
+console.log('Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.some(allowedOrigin => 
+        origin === allowedOrigin || 
+        origin.startsWith(allowedOrigin) ||
+        allowedOrigin.startsWith(origin)
+    )) {
       callback(null, true);
     } else {
+      console.log('CORS blocked for origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 connectDB();
 
@@ -72,6 +87,10 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'CORS policy blocked the request' });
+  }
+  
   console.error(err.stack);
   res.status(500).json({ 
     error: 'Internal server error',
@@ -81,4 +100,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });
