@@ -1,17 +1,38 @@
-// In your API configuration
+// api.js - Fixed version
+
+// Define BASE with proper fallbacks
 const BASE = "https://event-booking-management.onrender.com";
 
+// Debug log to verify BASE is defined
+console.log("API Base URL:", BASE);
+
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    credentials: "include", // send session cookies
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Request failed");
-  return data;
+  const url = `${BASE}${path}`;
+  console.log("Making request to:", url);
+  
+  try {
+    const res = await fetch(url, {
+      credentials: "include",
+      headers: { 
+        "Content-Type": "application/json",
+      },
+      ...options,
+    });
+    
+    const data = await res.json().catch(() => ({}));
+    
+    if (!res.ok) {
+      throw new Error(data.message || `Request failed with status ${res.status}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("API request error:", error);
+    throw error;
+  }
 }
 
+// Export API methods
 export default {
   // users
   register: (data) => request("/user/register", { method: "POST", body: JSON.stringify(data) }),
