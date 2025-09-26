@@ -1,9 +1,7 @@
-// backend/server.js
 import express from "express";
 import dotenv from "dotenv";
-import cors from "cors";
+import cors from 'cors';
 dotenv.config();
-
 import userRoute from "./routes/user.route.js";
 import connectDB from "./config/connectDB.js";
 import session from "express-session";
@@ -11,36 +9,27 @@ import eventRoute from './routes/event.route.js';
 import bookingRoute from './routes/booking.route.js';
 import MongoStore from "connect-mongo";
 
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
 const PORT = process.env.PORT || 5000;
+const app = express();
 
-// Trust proxy (Render sits behind a proxy) so secure cookies work
-app.set("trust proxy", 1);
-
-// CORS: allow dev origin, allow credentials. In production the frontend is served by the same origin.
-if (process.env.NODE_ENV !== "production") {
-  app.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true
-  }));
-} else {
-  app.use(cors({
-    origin: true, // reflect origin (frontend served from same origin in prod)
-    credentials: true
-  }));
-}
+// CORS configuration for production
+app.use(cors({
+  origin: [
+    "http://localhost:5173", // React dev server
+    "https://your-frontend-domain.netlify.app", // Replace with your actual frontend domain
+    process.env.FRONTEND_URL // Environment variable for flexibility
+  ].filter(Boolean), // Remove any undefined values
+  credentials: true,
+}));
 
 connectDB();
-app.use(express.json());
 
+app.use(express.json());
+app.set("trust proxy", 1);
+
+// Session configuration for production
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || "fallback-secret-key",
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
@@ -50,27 +39,46 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax"
+    secure: process.env.NODE_ENV === "production", // true in production
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax" // none for cross-site in production
   }
 }));
 
-// --- API routes (handle these first) ---
+// Routes
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "Event Booking API is running",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "OK", 
+    database: "Connected", 
+    timestamp: new Date().toISOString() 
+  });
+});
+
 app.use('/user', userRoute);
 app.use('/events', eventRoute);
 app.use('/bookings', bookingRoute);
 
-// --- Serve frontend static files ---
-// If using Vite the build output is ../frontend/dist
-const frontendDistPath = path.join(__dirname, "../frontend/dist");
-app.use(express.static(frontendDistPath));
-
-// SPA fallback for client-side routing. Place AFTER API routes.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    message: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
+  });
 });
 
-// Start
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
